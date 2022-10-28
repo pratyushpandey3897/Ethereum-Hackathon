@@ -81,18 +81,7 @@ def daterange(start_date, end_date):
     for n in range(int((end_date - start_date).days)):
         yield start_date + timedelta(n)
 
-
-
-start_date = date(2022, 9, 1)
-end_date = date(2022, 9, 30)
-
-gini_values = {}
-shanon_values = {}
-
-for date in daterange(start_date, end_date):
-    date = date.strftime("%Y-%m-%d")
-    block_dir = "blocks_data.csv"
-
+def fetch_data_from_csv(date, block_dir):
     print(date)
     initialize_blocks(date, block_dir)
 
@@ -107,31 +96,82 @@ for date in daterange(start_date, end_date):
             freq[m] += 1
         else:
             freq[m] = 1
+    return freq
 
-    date_time_obj = datetime.strptime(date, '%Y-%m-%d')
+def monthly_stats(start_date, end_date):
 
+    gini_values = {}
+    shanon_values = {}
+
+    for date in daterange(start_date, end_date):
+        date = date.strftime("%Y-%m-%d")
+        block_dir = "blocks_data.csv"
+
+        # print(date)
+        # initialize_blocks(date, block_dir)
+
+        # data = read_csv(block_dir)
+
+        # miner = data['miner'].tolist()
+        # freq = {}
+        # a =set()
+        # for m in miner:
+        #     a.add(m)
+        #     if m in freq:
+        #         freq[m] += 1
+        #     else:
+        #         freq[m] = 1
+
+        date_time_obj = datetime.strptime(date, '%Y-%m-%d')
+
+        # valuesList = list(freq.values())
+
+        valuesList = list(fetch_data_from_csv(date,block_dir).values())
+
+        gini_values[date_time_obj.date()] = gini(np.array(valuesList))
+        shanon_values[date_time_obj.date()] = shanon_entropy(np.array(valuesList))
+        print("Gini Coefficient: " , gini_values[date_time_obj.date()])
+        print("Shanon Entropy: " , shanon_values[date_time_obj.date()])
+        # print("total validators :", len(miner))
+        # print("unique validators :", len(a))
+
+
+    lists = sorted(gini_values.items())
+    x1, y1 = zip(*lists) # unpack a list of pairs into two tuples
+
+
+    lists = sorted(shanon_values.items())
+    x2, y2 = zip(*lists) # unpack a list of pairs into two tuples
+
+
+    figure, axis = plt.subplots(2, 1)
+    axis[0].plot(x1, y1)
+    axis[0].set_title("Gini Coefficient: Higher value suggests less decentralized")
+
+    axis[1].plot(x2, y2)
+    axis[1].set_title("Shanon Entropy: Higher value suggests more randomness/decentralization")
+
+    plt.show()
+
+def daily_distribution(target_day):
+    
+    target_date = target_day.strftime("%Y-%m-%d")
+    block_dir = "blocks_data.csv"
+    freq = fetch_data_from_csv(target_date,block_dir)
     valuesList = list(freq.values())
-    gini_values[date_time_obj.date()] = gini(np.array(valuesList))
-    shanon_values[date_time_obj.date()] = shanon_entropy(np.array(valuesList))
-    print("Gini Coefficient: " , gini_values[date_time_obj.date()])
-    print("Shanon Entropy: " , shanon_values[date_time_obj.date()])
+
+    print("Gini Coefficient: " , gini(np.array(valuesList)))
+    print("Shanon Entropy: " , shanon_entropy(np.array(valuesList)))
     # print("total validators :", len(miner))
-    # print("unique validators :", len(a))
+    print("unique validators :", len(valuesList))
+    plot_validation_distribution_piechart(freq)
 
 
-lists = sorted(gini_values.items())
-x1, y1 = zip(*lists) # unpack a list of pairs into two tuples
+target_day = date(2022, 9, 14)
+#plots validators distribution on a piechart
+# daily_distribution(target_day)
 
-
-lists = sorted(shanon_values.items())
-x2, y2 = zip(*lists) # unpack a list of pairs into two tuples
-
-
-figure, axis = plt.subplots(2, 1)
-axis[0].plot(x1, y1)
-axis[0].set_title("Gini's Coefficient")
-
-axis[1].plot(x2, y2)
-axis[1].set_title("Shanon Entropy")
-
-plt.show()
+# plots gini and shanon entropy for the date range
+start_date = date(2022, 1, 1)
+end_date = date(2022, 1, 3)
+monthly_stats(start_date,end_date)
